@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <TextView
+        android:id="@+id/txtLight"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="24dp"
+        android:text="Light level: -" />
+
+    <TextView
+        android:id="@+id/txtMicrophone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/txtLight"
+        android:layout_marginTop="17dp"
+        android:text="Microphone level: -" />
+
+    <TextView
+        android:id="@+id/txtAccelerometerX"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/txtMicrophone"
+        android:layout_marginTop="24dp"
+        android:text="Accelerometer X: -" />
+
+    <TextView
+        android:id="@+id/txtAccelerometerZ"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/txtAccelerometerX"
+        android:text="Accelerometer Z: -" />
+
+    <TextView
+        android:id="@+id/txtAccelerometerY"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/txtAccelerometerZ"
+        android:text="Accelerometer Y: -" />
+
+</RelativeLayout>

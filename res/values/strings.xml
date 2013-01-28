@@ -1,0 +1,18 @@
+<resources>
+
+    <string name="app_name">InterruptionManager</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_main">Interruption manager</string>
+    <string name="work_settings">Work settings</string>
+    <string name="work_time_table">Work time</string>
+    <string name="pref_work_interruption">Interrupt work</string>
+    <string name="pref_work_interruption_summary">Select if phone can interrupt at work.</string>
+    <string name="pref_starting_work">Starting time work</string>
+    <string name="pref_starting_work_summary">Set starting time for work.</string>
+    <string name="pref_ending_work">Ending time work</string>
+    <string name="pref_ending_work_summary">Set ending time for work.</string>
+    <string name="notificationTime">TODO</string>
+    <string name="txtPreferencesButton">Settings</string>
+
+</resources>

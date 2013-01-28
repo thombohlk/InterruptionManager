@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen  xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+xml/preferences">
+    <!-- opens a subscreen of settings -->
+    <PreferenceScreen
+        android:key="work_settings"
+        android:title="@string/work_settings"
+        android:persistent="false">
+		<PreferenceCategory 
+        	android:title="@string/work_time_table"
+        	android:key="pref_key_storage_settings">
+        	<CheckBoxPreference
+        	    android:key="pref_work_interruption"
+        	    android:summary="@string/pref_work_interruption_summary"
+        	    android:title="@string/pref_work_interruption"
+        	    android:defaultValue="false" />
+        	<helperClasses.TimePreference
+				android:key="pref_starting_work"
+				android:summary="@string/pref_starting_work_summary"
+				android:title="@string/pref_starting_work"
+				android:dialogLayout="@layout/time_preference" />
+        	<helperClasses.TimePreference
+				android:key="pref_ending_work"
+				android:summary="@string/pref_ending_work_summary"
+				android:title="@string/pref_ending_work"
+				android:dialogLayout="@layout/time_preference" />
+    	</PreferenceCategory>
+    </PreferenceScreen>
+   	<ListPreference 
+		android:title="Situation"
+		android:key="pref_situation"
+		android:entries="@array/listArray"
+		android:entryValues="@array/listValues" />
+</PreferenceScreen>
