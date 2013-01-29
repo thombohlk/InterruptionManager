@@ -1,9 +1,16 @@
 package com.example.interruptionmanager;
 
 import java.io.IOException;
+import java.util.ArrayList;
+
+import com.example.interruptionProperties.ActionObject;
+import com.example.interruptionProperties.Interrupter;
+import com.example.interruptionProperties.NotificationType;
+import com.example.interruptionProperties.Situation;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -11,6 +18,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -21,6 +29,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Vibrator;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
@@ -39,28 +48,39 @@ public class MainService extends Service {
 	private Sensor mActivity;
 	private AudioManager audio;
 	private Handler handler;
+	private AnalysisModel aModel;
+	private SupportModel sModel;
+	private String interrupterID;
+	private String notificationType;
 
-	private double lastAverageSoundValue = 0;
-	private double lastAverageActivityValue = 0;
-	private double lastAverageLightValue = 0;
+	private double lastAveSound = 0;
+	private double lastAveActivity = 0;
+	private double lastAveLight = 0;
 	double currentActivityValue = 0;
 	double currentLightValue = 0;
+
+	ArrayList<Situation> situations;
+	ArrayList<Interrupter> interrupters;
+	ArrayList<NotificationType> notifications;
     
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
     	@Override
     	public void onReceive(Context context, Intent intent) {
     		String action = intent.getAction();
+			createNotification("Test", action, 0);
     		if(action.equals("android.provider.Telephony.SMS_RECEIVED")){
 				Bundle extras = intent.getExtras();
-    			createNotification("Received SMS", "You received an SMS from "+extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER)+". That's all.", 0);
+    			//createNotification("Received SMS", "You received an SMS from "+extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER)+". That's all.", 0);
 			}
     		if(action.equals("android.intent.action.PHONE_STATE")){
 				Bundle extras = intent.getExtras();
 				if (extras != null) {
 					String state = extras.getString(TelephonyManager.EXTRA_STATE);
 					Log.d("LOG", state);
+					createNotification("Test", state, 0);
+					
 					if (state.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
-						setVibrationSetting(1);
+						handleInterruption("call", extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER));
 						//sendSMS(extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER), "Thomas is in a meeting right now. He will call you back today.");
 					}
 				}
@@ -114,9 +134,10 @@ public class MainService extends Service {
 
 			mSensorManager.unregisterListener(listener);
 
-			lastAverageSoundValue = totalSoundValue / i;
-			lastAverageActivityValue = totalActivityValue / i;
-			lastAverageLightValue = totalLightValue / i;
+			lastAveSound = totalSoundValue / i;
+			lastAveActivity = totalActivityValue / i;
+			lastAveLight = totalLightValue / i;
+			aModel.updateSensorValues(lastAveSound, lastAveActivity, lastAveLight);
 			//createNotification("Update", "s: "+String.format("%.2f", lastAverageSoundValue)+", a: "+String.format("%.2f", lastAverageActivityValue)+", l: "+String.format("%.2f", lastAverageLightValue), 0);
 			if (isInterrupted()) return;
 			
@@ -133,14 +154,48 @@ public class MainService extends Service {
 	
 	@Override
 	public void onCreate() {
+		aModel = new AnalysisModel();
+		sModel = new SupportModel();
+		
+		createData();
+		setupCallListener();
+		setupMic();
+		
 		audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 		
 		handler = new Handler();
 		handler.removeCallbacks(averageSoundValue);
 		handler.postDelayed(averageSoundValue, 1000);
 		
-		setupMic();
-		setupCallListener();
+		handleInterruption("call", "5554");
+		//createNotification("Received SMS", "Testing adaptation activity", 0);
+	}
+
+	private void createData() {
+		// TODO Auto-generated method stub
+		// id, weight, cost benefit
+		situations = new ArrayList<Situation>();
+        situations.add(new Situation("At home sleeping", 0, 0, 0));
+        situations.add(new Situation("At home relaxing", 0, 0, 0));
+        situations.add(new Situation("At home working", 1, 1, 2));
+        situations.add(new Situation("At work in meeting", 0, 0, 0));
+        situations.add(new Situation("At work at desk", 0, 0, 0));
+        situations.add(new Situation("On bike", 0, 0, 0));
+        situations.add(new Situation("In car", 0, 0, 0));
+        situations.add(new Situation("In public transport", 0, 0, 0));
+        
+		interrupters = new ArrayList<Interrupter>();
+		interrupters.add(new Interrupter("5554", 0, 0, 0));
+		interrupters.add(new Interrupter("5556", 0, 0, 0));
+		interrupters.add(new Interrupter("5558", 0, 0, 0));
+		interrupters.add(new Interrupter("5560", 0, 0, 0));
+        
+		notifications = new ArrayList<NotificationType>();
+		notifications.add(new NotificationType("call", 0, 0, 0));
+		notifications.add(new NotificationType("sms", 0, 0, 0));
+
+		aModel.setData(situations, interrupters, notifications);
+		sModel.setData(situations, interrupters, notifications);
 	}
 
 	@Override
@@ -157,7 +212,36 @@ public class MainService extends Service {
 		mLight = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
 		mActivity = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 	}
-	
+
+	private void handleInterruption(String notificationType, String interrupterID) {
+		int problemState = 0;
+		this.interrupterID = interrupterID;
+		this.notificationType = notificationType;
+		
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		
+		aModel.setSituation(prefs.getString("pref_situation", "At home working"));
+		aModel.setSettings(audio.getStreamVolume(AudioManager.STREAM_RING), audio.getRingerMode());
+		problemState = aModel.detectProblemState(notificationType, interrupterID);
+		Log.d("LOG", "problemState: " + String.valueOf(problemState));
+		
+		if (problemState == AnalysisModel.UNWANTED_INTERRUPTION || problemState == AnalysisModel.MISSING_INTERRUPTION) {
+			sModel.setProblemState(problemState);
+			sModel.setPIV(aModel.getPIV());
+			
+			performAction(sModel.getAction());
+		}
+	}
+
+	private void performAction(ActionObject action) {
+		setSoundSettings(action.getSoundAction());
+		setVibrationSetting(action.getVibrateAction());
+		
+		if (action.getSendSMS() == 1) sendSMS(interrupterID, "Message");		
+		
+		createNotification("Action performed", "Bla", 0);
+	}
+
 	private void setupCallListener() {
 		IntentFilter filter = new IntentFilter();
 		filter.addAction("android.intent.action.PHONE_STATE");
@@ -173,15 +257,26 @@ public class MainService extends Service {
 //		audio.setRingerMode(AudioManager.RINGER_MODE_VIBRATE); // Vibrate
 //		audio.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_LOWER, 0); // volume down
 //		audio.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_RAISE, 0); // volume up
+
+		Log.d("LOG", "sound adaptation: " + String.valueOf(level));
+		// TODO: make mapping from level to actual settings.
+		if (level == 0 && audio.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
+			audio.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+		} else {
+			audio.setStreamVolume(AudioManager.STREAM_RING, level, 0);
+		}
 	}
 	
 	private void setVibrationSetting(int level) {
 		// TODO: make mapping from level to actual settings.
+		Log.d("LOG", "vibration adaptation: " + String.valueOf(level));
 		switch (level) {
-		case 1:
-			audio.setRingerMode(AudioManager.RINGER_MODE_VIBRATE); // Vibrate
+		case 0:
+			if (audio.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE) audio.setRingerMode(AudioManager.RINGER_MODE_SILENT);
 			break;
-		
+		case 1:
+			if (audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT) audio.setRingerMode(AudioManager.RINGER_MODE_VIBRATE); // Vibrate
+			break;
 		case 2:
 			audio.setRingerMode(AudioManager.RINGER_MODE_VIBRATE); // Vibrate
 			Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -201,7 +296,7 @@ public class MainService extends Service {
 		        .setContentTitle(contentTitle)
 		        .setContentText(contentText);
 		
-		Intent intent = new Intent(this, SettingsActivity.class);
+		Intent intent = new Intent(this, AdaptationActivity.class);
 		PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, 0);
 		
 		mBuilder.setContentIntent(pIntent);
@@ -213,8 +308,7 @@ public class MainService extends Service {
 		mNotificationManager.notify(id, mBuilder.build());
 	}
 	
-    private void sendSMS(String phoneNumber, String message)
-    {        
+    private void sendSMS(String phoneNumber, String message) {        
         String SENT = "SMS_SENT";
         String DELIVERED = "SMS_DELIVERED";
  

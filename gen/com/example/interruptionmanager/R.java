@@ -23,19 +23,25 @@ public final class R {
         public static final int btnOnOff=0x7f090000;
         public static final int btnPreferences=0x7f090003;
         public static final int btnSensors=0x7f090002;
-        public static final int menu_settings=0x7f09000b;
-        public static final int prefTimePicker=0x7f09000a;
-        public static final int txtAccelerometerX=0x7f090007;
-        public static final int txtAccelerometerY=0x7f090009;
-        public static final int txtAccelerometerZ=0x7f090008;
-        public static final int txtLight=0x7f090005;
-        public static final int txtMicrophone=0x7f090006;
+        public static final int confirm=0x7f090009;
+        public static final int interrupter=0x7f090007;
+        public static final int menu_settings=0x7f090010;
+        public static final int notification=0x7f090008;
+        public static final int prefTimePicker=0x7f09000f;
+        public static final int reasonDeviation=0x7f090005;
+        public static final int situation=0x7f090006;
+        public static final int txtAccelerometerX=0x7f09000c;
+        public static final int txtAccelerometerY=0x7f09000e;
+        public static final int txtAccelerometerZ=0x7f09000d;
+        public static final int txtLight=0x7f09000a;
+        public static final int txtMicrophone=0x7f09000b;
         public static final int txtStatus=0x7f090001;
     }
     public static final class layout {
         public static final int activity_main=0x7f030000;
-        public static final int sensors=0x7f030001;
-        public static final int time_preference=0x7f030002;
+        public static final int adaptation_layout=0x7f030001;
+        public static final int sensors=0x7f030002;
+        public static final int time_preference=0x7f030003;
     }
     public static final class menu {
         public static final int activity_main=0x7f080000;
