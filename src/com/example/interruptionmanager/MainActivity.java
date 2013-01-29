@@ -71,10 +71,11 @@ public class MainActivity extends Activity {
 			
 			@Override
 			public void onClick(View v) {
+				Intent serviceIntent = new Intent(MainActivity.this, MainService.class);
 				if (btnOnOff.isChecked()) {
-					Intent serviceIntent = new Intent(MainActivity.this, MainService.class);
-					ComponentName cn = startService(serviceIntent);
-					txtStatus.setText(cn.toString());
+					startService(serviceIntent);
+				} else {
+					stopService(serviceIntent);
 				}
 			}
 		});
