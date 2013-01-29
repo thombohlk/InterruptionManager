@@ -1,5 +1,7 @@
 package com.example.interruptionmanager;
 
+import java.io.IOException;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.NotificationManager;
@@ -9,8 +11,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.AudioManager;
+import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.Vibrator;
 import android.support.v4.app.NotificationCompat;
@@ -21,7 +29,22 @@ import android.widget.Toast;
 
 public class MainService extends Service {
 
-	AudioManager audio;
+	private static int updateNrOfIterations = 10;
+	private static double updateIterationDuration = 0.5; // in seconds
+	private static double updateInterval = 180; // in seconds
+
+	private MediaRecorder mRecorder;
+	private SensorManager mSensorManager;
+	private Sensor mLight;
+	private Sensor mActivity;
+	private AudioManager audio;
+	private Handler handler;
+
+	private double lastAverageSoundValue = 0;
+	private double lastAverageActivityValue = 0;
+	private double lastAverageLightValue = 0;
+	double currentActivityValue = 0;
+	double currentLightValue = 0;
     
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
     	@Override
@@ -44,6 +67,63 @@ public class MainService extends Service {
 			}     
     	}
     };
+    
+    // Sensor listener for accelerometer and light
+    private SensorEventListener listener = new SensorEventListener() {
+		public void onSensorChanged(SensorEvent e) {
+			if (e.sensor.getType()==Sensor.TYPE_ACCELEROMETER) {
+				currentActivityValue = e.values[0] * e.values[0];
+				currentActivityValue += e.values[1] * e.values[1];
+				currentActivityValue += e.values[2] * e.values[2];
+			} else if (e.sensor.getType()==Sensor.TYPE_LIGHT) {
+				currentLightValue = e.values[0];
+			}
+		}
+        
+		public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        	// Not used
+        }
+	};
+    
+    private Thread averageSoundValue = new Thread() {
+		
+		@Override
+		public void run() {
+			int i = 0;
+			double totalSoundValue = 0;
+			double totalActivityValue = 0;
+			double totalLightValue = 0;
+			
+			mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+			mSensorManager.registerListener(listener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),SensorManager.SENSOR_DELAY_UI);
+			mSensorManager.registerListener(listener, mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT),SensorManager.SENSOR_DELAY_UI);
+			
+			if (isInterrupted()) return;
+			
+			while (i < updateNrOfIterations) {
+				totalSoundValue += getAmplitude();
+				totalActivityValue += currentActivityValue;
+				totalLightValue += currentLightValue;
+				i++;
+				try {
+					sleep((int)(updateIterationDuration * 1000));
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+
+			mSensorManager.unregisterListener(listener);
+
+			lastAverageSoundValue = totalSoundValue / i;
+			lastAverageActivityValue = totalActivityValue / i;
+			lastAverageLightValue = totalLightValue / i;
+			//createNotification("Update", "s: "+String.format("%.2f", lastAverageSoundValue)+", a: "+String.format("%.2f", lastAverageActivityValue)+", l: "+String.format("%.2f", lastAverageLightValue), 0);
+			if (isInterrupted()) return;
+			
+			handler.removeCallbacks(averageSoundValue);
+			handler.postDelayed(averageSoundValue, (int)(updateInterval * 1000));
+		}
+	};
 	
 	@Override
 	public IBinder onBind(Intent arg0) {
@@ -51,25 +131,31 @@ public class MainService extends Service {
 		return null;
 	}
 	
-	@SuppressLint("NewApi")
 	@Override
 	public void onCreate() {
-		// Set ringer volume
 		audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 		
+		handler = new Handler();
+		handler.removeCallbacks(averageSoundValue);
+		handler.postDelayed(averageSoundValue, 1000);
+		
+		setupMic();
 		setupCallListener();
 	}
 
 	@Override
 	public void onDestroy() {
+		handler.removeCallbacks(averageSoundValue);
+		averageSoundValue.interrupt();
 		Toast.makeText(this, "My Service Stopped", Toast.LENGTH_LONG).show();
 		Log.d("LOG", "onDestroy");
 	}
 	
-	@SuppressLint("NewApi")
 	@Override
 	public void onStart(Intent i, int startid) {
-		
+		mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+		mLight = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+		mActivity = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 	}
 	
 	private void setupCallListener() {
@@ -189,4 +275,31 @@ public class MainService extends Service {
         SmsManager sms = SmsManager.getDefault();
         sms.sendTextMessage(phoneNumber, null, message, sentPI, deliveredPI);        
     }
+    
+
+
+	private void setupMic() {
+		if (mRecorder == null) {
+			mRecorder = new MediaRecorder();
+			mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+			mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+			mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+			mRecorder.setOutputFile("/dev/null");
+			try {
+				mRecorder.prepare();
+			} catch (IllegalStateException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			mRecorder.start();
+		}
+	}
+
+	public double getAmplitude() {
+		if (mRecorder != null)
+			return (mRecorder.getMaxAmplitude() / 2700.0);
+		else
+			return 0;
+	}
 }
