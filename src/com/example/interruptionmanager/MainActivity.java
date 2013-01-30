@@ -1,16 +1,11 @@
 package com.example.interruptionmanager;
 
-import java.io.IOException;
-import java.io.InputStream;
-
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.json.JSONObject;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -30,6 +25,7 @@ public class MainActivity extends Activity {
 
 	Button btnSettings;
 	Button btnSensors;
+	Button btnAdaptation;
 	ToggleButton btnOnOff;
 	TextView txtStatus;
 	
@@ -46,6 +42,7 @@ public class MainActivity extends Activity {
 
         btnSettings = (Button)findViewById(R.id.btnPreferences);
         btnSensors = (Button)findViewById(R.id.btnSensors);
+        btnAdaptation = (Button)findViewById(R.id.btnAdaptation);
         btnOnOff = (ToggleButton)findViewById(R.id.btnOnOff);
         txtStatus = (TextView)findViewById(R.id.txtStatus);
 
@@ -58,6 +55,16 @@ public class MainActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent("com.example.interruptionmanager.SETTINGSACTIVITY");
+				startActivity(intent);
+			}
+		});
+		
+        btnAdaptation.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent("com.example.interruptionmanager.ADAPTATIONACTIVITY");
+				intent.putExtra("situation", "At home working");
 				startActivity(intent);
 			}
 		});

@@ -4,26 +4,27 @@
     android:layout_height="match_parent" >
 
     <RadioGroup
-        android:id="@+id/reasonDeviation"
+        android:id="@+id/rdgReasonDeviation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true" >
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="162dp" >
 
         <RadioButton
-            android:id="@+id/situation"
+            android:id="@+id/rdbSituation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:checked="true"
             android:text="Situation" />
 
         <RadioButton
-            android:id="@+id/interrupter"
+            android:id="@+id/rdbInterrupter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Interruter" />
+            android:text="Interrupter" />
 
         <RadioButton
-            android:id="@+id/notification"
+            android:id="@+id/rdbNotification"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Notification" />
@@ -33,10 +34,10 @@
         android:id="@+id/confirm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_below="@+id/reasonDeviation"
-        android:layout_marginLeft="17dp"
-        android:layout_marginTop="22dp"
+        android:layout_alignTop="@+id/rdgReasonDeviation"
+        android:layout_marginLeft="26dp"
+        android:layout_marginTop="17dp"
+        android:layout_toRightOf="@+id/rdgReasonDeviation"
         android:text="OK" />
 
 </RelativeLayout>

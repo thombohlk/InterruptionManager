@@ -3,16 +3,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <TextView
-        android:id="@+id/txtStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_centerVertical="true"
-        android:layout_marginLeft="18dp"
-        android:text="Status: "
-        android:textAppearance="?android:attr/textAppearanceLarge" />
-
     <Button
         android:id="@+id/btnPreferences"
         android:layout_width="wrap_content"
@@ -31,13 +21,33 @@
         android:layout_marginTop="24dp"
         android:text="ToggleButton" />
 
+    <TextView
+        android:id="@+id/txtStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="117dp"
+        android:layout_marginLeft="18dp"
+        android:text="Status: "
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
     <Button
         android:id="@+id/btnSensors"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/txtStatus"
         android:layout_alignLeft="@+id/txtStatus"
-        android:layout_marginBottom="14dp"
+        android:layout_below="@+id/btnPreferences"
+        android:layout_marginTop="26dp"
         android:text="Sensors" />
+
+    <Button
+        android:id="@+id/btnAdaptation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/btnSensors"
+        android:layout_below="@+id/btnSensors"
+        android:layout_marginTop="24dp"
+        android:text="Adaptation example" />
 
 </RelativeLayout>

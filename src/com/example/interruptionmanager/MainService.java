@@ -1,6 +1,7 @@
 package com.example.interruptionmanager;
 
 import java.io.IOException;
+import java.io.ObjectOutputStream.PutField;
 import java.util.ArrayList;
 
 import com.example.interruptionProperties.ActionObject;
@@ -8,9 +9,7 @@ import com.example.interruptionProperties.Interrupter;
 import com.example.interruptionProperties.NotificationType;
 import com.example.interruptionProperties.Situation;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -175,7 +174,12 @@ public class MainService extends Service {
 		handler.postDelayed(averageSoundValue, 1000);
 		
 		//handleInterruption("call", "5554");
-		//createNotification("Received SMS", "Testing adaptation activity", 0);
+		Intent intent = new Intent("com.example.interruptionmanager.ADAPTATIONACTIVITY")
+		.putExtra("situation", "At home working")
+		.putExtra("interrupter", "5554")
+		.putExtra("notification", "call");
+		
+		createNotification("Received SMS", "Testing adaptation activity", 0, intent);
 		Log.d("MainService", "onCreate ended");
 	}
 
@@ -184,23 +188,23 @@ public class MainService extends Service {
 		// id, weight, cost, benefit
 		// situations are defined in res/xml/preferences.xml
 		situations = new ArrayList<Situation>();
-        situations.add(new Situation("1", 0, 0, 0)); // At home sleeping
-        situations.add(new Situation("2", 0, 0, 0)); // At home relaxing
-        situations.add(new Situation("3", 1, 1, 2)); // At home working
-        situations.add(new Situation("4", 0, 0, 0)); // At work in meeting
-        situations.add(new Situation("5", 0, 0, 0)); // At work at desk
-        situations.add(new Situation("6", 0, 0, 0)); // On bike
-        situations.add(new Situation("7", 0, 0, 0)); // In car
-        situations.add(new Situation("8", 0, 0, 0)); // In public transport
+        situations.add(new Situation("1", 1, 9, 1)); // At home sleeping
+        situations.add(new Situation("2", 1, 2, 5)); // At home relaxing
+        situations.add(new Situation("3", 1, 7, 3)); // At home working
+        situations.add(new Situation("4", 1, 10, 1)); // At work in meeting
+        situations.add(new Situation("5", 1, 8, 0)); // At work at desk
+        situations.add(new Situation("6", 1, 4, 3)); // On bike
+        situations.add(new Situation("7", 1, 8, 2)); // In car
+        situations.add(new Situation("8", 1, 1, 6)); // In public transport
         
 		interrupters = new ArrayList<Interrupter>();
-		interrupters.add(new Interrupter("15555215554", 0, 0, 0));
-		interrupters.add(new Interrupter("15555215556", 0, 0, 0));
-		interrupters.add(new Interrupter("15555215558", 0, 0, 0));
+		interrupters.add(new Interrupter("+31622725339", 1, 0, 0));
+		interrupters.add(new Interrupter("+31659059324", 1, 0, 0));
+		interrupters.add(new Interrupter("15555215558", 1, 0, 0));
         
 		notifications = new ArrayList<NotificationType>();
-		notifications.add(new NotificationType("call", 0, 0, 0));
-		notifications.add(new NotificationType("sms", 0, 0, 0));
+		notifications.add(new NotificationType("call", 1, 6, 3));
+		notifications.add(new NotificationType("sms", 1, 3, 1));
 
 		aModel.setData(situations, interrupters, notifications);
 		sModel.setData(situations, interrupters, notifications);
@@ -232,7 +236,6 @@ public class MainService extends Service {
 		this.notificationType = notificationType;
 		
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		//Log.d("MainService", prefs.getString("pref_situation", "none"));
 
 		aModel.setSituation(prefs.getString("pref_situation", "0"));
 		aModel.setSettings(audio.getStreamVolume(AudioManager.STREAM_RING), audio.getRingerMode());
@@ -301,7 +304,7 @@ public class MainService extends Service {
 		}
 	}
 
-	private void createNotification(String contentTitle, String contentText, int id) {
+	private void createNotification(String contentTitle, String contentText, int id, Intent intent) {
 		// Create notification
 		NotificationCompat.Builder mBuilder =
 		        new NotificationCompat.Builder(this)
@@ -309,11 +312,8 @@ public class MainService extends Service {
 		        .setContentTitle(contentTitle)
 		        .setContentText(contentText);
 		
-		Intent intent = new Intent(this, AdaptationActivity.class);
 		PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, 0);
-		
 		mBuilder.setContentIntent(pIntent);
-		
 		
 		NotificationManager mNotificationManager =
 		    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);

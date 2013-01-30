@@ -41,6 +41,7 @@ public class AnalysisModel {
 
 	public int detectProblemState(String notification, String interrupter) {
 		boolean detected = userDetectsInput();
+		Log.d("LOG", "Detected: "+String.valueOf(detected));
 		piv = calculatePIV(notification, interrupter);
 
 		Log.d("LOG", "detected = "+ String.valueOf(detected));
@@ -61,7 +62,7 @@ public class AnalysisModel {
 		for (int i = 0; i < situations.size(); i++) {
 			if (situations.get(i).id.equals(situation)) {
 				result += (situations.get(i).benefit - situations.get(i).cost) * situations.get(i).weight;
-				Log.d("LOG", "true");
+				Log.d("LOG", "Found situation");
 			}
 		}
 		for (int i = 0; i < interrupters.size(); i++) {
