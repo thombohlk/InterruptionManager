@@ -26,6 +26,9 @@ public class SensorActivity extends Activity implements SensorEventListener {
 	private SensorManager mSensorManager;
 	private Sensor mLight;
 	private Sensor mAccelerometer;
+	private Sensor mGravity;
+	
+	private double xGravity, yGravity, zGravity;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -46,12 +49,14 @@ public class SensorActivity extends Activity implements SensorEventListener {
 		mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
 		mLight = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
 		mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+		mGravity = mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
 	}
 
 	@Override
 	protected void onResume() {
 		mSensorManager.registerListener(this, mLight, SensorManager.SENSOR_DELAY_NORMAL);
 		mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+		mSensorManager.registerListener(this, mGravity, SensorManager.SENSOR_DELAY_NORMAL);
 		super.onResume();
 	}
 	
@@ -106,9 +111,13 @@ public class SensorActivity extends Activity implements SensorEventListener {
 		if( event.sensor.getType() == Sensor.TYPE_LIGHT){
 			txtLightLevelValue.setText("Light value: "+Double.toString(event.values[0]));
 		} else if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-			txtAccXValue.setText("Accelerometer X-value: "+Double.toString(event.values[0]));
-			txtAccYValue.setText("Accelerometer Y-value: "+Double.toString(event.values[1]));
-			txtAccZValue.setText("Accelerometer Z-value: "+Double.toString(event.values[2]));
+			txtAccXValue.setText("Accelerometer X-value: "+Double.toString(event.values[0]-xGravity));
+			txtAccYValue.setText("Accelerometer Y-value: "+Double.toString(event.values[1]-yGravity));
+			txtAccZValue.setText("Accelerometer Z-value: "+Double.toString(event.values[2]-zGravity));
+		} else if (event.sensor.getType() == Sensor.TYPE_GRAVITY) {
+			xGravity = event.values[0];
+			yGravity = event.values[1];
+			zGravity = event.values[2];
 		}
 	}
 }

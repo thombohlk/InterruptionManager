@@ -21,7 +21,7 @@ public class AnalysisModel {
 	private double lastAveActivity = 0;
 	private double lastAveLight = 0;
 	private double piv = 0;
-	private String situation = "none";
+	private String situation = "0";
 	private int streamVolume = 0;
 	private int ringerMode = 0;
 
@@ -30,9 +30,7 @@ public class AnalysisModel {
 	ArrayList<NotificationType> notifications;
 	
 	public AnalysisModel() {
-		// TODO: Get situation
-		//SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(null);
-		this.situation = "At home working";
+		
 	}
 	
 	public void updateSensorValues(double sound, double activity, double light) {

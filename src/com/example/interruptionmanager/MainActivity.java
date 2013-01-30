@@ -8,11 +8,17 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningServiceInfo;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -29,26 +35,24 @@ public class MainActivity extends Activity {
 	
 	MediaRecorder mRecorder;
 	
-	static HttpClient httpclient;
-	static InputStream is = null;
-    static JSONObject jObj = null;
-    static String json = "";
-	
     @Override
     public void onCreate(Bundle savedInstanceState) {
+		Log.d("MainActivity", "onCreate started");
         
         StrictMode.enableDefaults();
         
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        httpclient = new DefaultHttpClient(); 
-
         btnSettings = (Button)findViewById(R.id.btnPreferences);
         btnSensors = (Button)findViewById(R.id.btnSensors);
         btnOnOff = (ToggleButton)findViewById(R.id.btnOnOff);
         txtStatus = (TextView)findViewById(R.id.txtStatus);
-        
+
+		
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		Log.d("LOG", prefs.getString("pref_situation", "none"));
+		
         btnSettings.setOnClickListener(new OnClickListener() {
 			
 			@Override
@@ -67,6 +71,7 @@ public class MainActivity extends Activity {
 			}
 		});
         
+        btnOnOff.setActivated(isMainServiceRunning());
         btnOnOff.setOnClickListener(new OnClickListener() {
 			
 			@Override
@@ -79,6 +84,24 @@ public class MainActivity extends Activity {
 				}
 			}
 		});
+		Log.d("MainActivity", "onCreate ended");
+    }
+    
+    @Override
+    protected void onResume() {
+    	// TODO Auto-generated method stub
+        btnOnOff.setChecked(isMainServiceRunning());
+    	super.onResume();
+    }
+    
+    private boolean isMainServiceRunning() {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (MainService.class.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

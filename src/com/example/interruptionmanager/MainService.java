@@ -67,7 +67,6 @@ public class MainService extends Service {
     	@Override
     	public void onReceive(Context context, Intent intent) {
     		String action = intent.getAction();
-			createNotification("Test", action, 0);
     		if(action.equals("android.provider.Telephony.SMS_RECEIVED")){
 				Bundle extras = intent.getExtras();
     			//createNotification("Received SMS", "You received an SMS from "+extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER)+". That's all.", 0);
@@ -77,10 +76,9 @@ public class MainService extends Service {
 				if (extras != null) {
 					String state = extras.getString(TelephonyManager.EXTRA_STATE);
 					Log.d("LOG", state);
-					createNotification("Test", state, 0);
-					
 					if (state.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
 						handleInterruption("call", extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER));
+						Log.d("LOG", extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER));
 						//sendSMS(extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER), "Thomas is in a meeting right now. He will call you back today.");
 					}
 				}
@@ -90,13 +88,19 @@ public class MainService extends Service {
     
     // Sensor listener for accelerometer and light
     private SensorEventListener listener = new SensorEventListener() {
+    	private double xGravity, yGravity, zGravity;
+    	
 		public void onSensorChanged(SensorEvent e) {
 			if (e.sensor.getType()==Sensor.TYPE_ACCELEROMETER) {
-				currentActivityValue = e.values[0] * e.values[0];
-				currentActivityValue += e.values[1] * e.values[1];
-				currentActivityValue += e.values[2] * e.values[2];
+				currentActivityValue = Math.pow(e.values[0] - xGravity, 2);
+				currentActivityValue += Math.pow(e.values[1] - yGravity, 2);
+				currentActivityValue += Math.pow(e.values[2] - zGravity, 2);
 			} else if (e.sensor.getType()==Sensor.TYPE_LIGHT) {
 				currentLightValue = e.values[0];
+			} else if (e.sensor.getType() == Sensor.TYPE_GRAVITY) {
+				xGravity = e.values[0];
+				yGravity = e.values[1];
+				zGravity = e.values[2];
 			}
 		}
         
@@ -113,14 +117,9 @@ public class MainService extends Service {
 			double totalSoundValue = 0;
 			double totalActivityValue = 0;
 			double totalLightValue = 0;
-			
-			mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
-			mSensorManager.registerListener(listener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),SensorManager.SENSOR_DELAY_UI);
-			mSensorManager.registerListener(listener, mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT),SensorManager.SENSOR_DELAY_UI);
-			
-			if (isInterrupted()) return;
-			
+						
 			while (i < updateNrOfIterations) {
+				if (isInterrupted()) return;
 				totalSoundValue += getAmplitude();
 				totalActivityValue += currentActivityValue;
 				totalLightValue += currentLightValue;
@@ -132,16 +131,19 @@ public class MainService extends Service {
 				}
 			}
 
-			mSensorManager.unregisterListener(listener);
-
 			lastAveSound = totalSoundValue / i;
 			lastAveActivity = totalActivityValue / i;
 			lastAveLight = totalLightValue / i;
-			aModel.updateSensorValues(lastAveSound, lastAveActivity, lastAveLight);
-			//createNotification("Update", "s: "+String.format("%.2f", lastAverageSoundValue)+", a: "+String.format("%.2f", lastAverageActivityValue)+", l: "+String.format("%.2f", lastAverageLightValue), 0);
-			if (isInterrupted()) return;
+
+			Log.d("LOG", "Sound: " + String.valueOf(lastAveSound));
+			Log.d("LOG", "Activity: " + String.valueOf(lastAveActivity));
+			Log.d("LOG", "Light: " + String.valueOf(lastAveLight));		
 			
+			aModel.updateSensorValues(lastAveSound, lastAveActivity, lastAveLight);
+			
+			// Call itself after updateInterval seconds.
 			handler.removeCallbacks(averageSoundValue);
+			if (isInterrupted()) return;
 			handler.postDelayed(averageSoundValue, (int)(updateInterval * 1000));
 		}
 	};
@@ -154,6 +156,7 @@ public class MainService extends Service {
 	
 	@Override
 	public void onCreate() {
+		Log.d("MainService", "onCreate started");
 		aModel = new AnalysisModel();
 		sModel = new SupportModel();
 		
@@ -162,33 +165,38 @@ public class MainService extends Service {
 		setupMic();
 		
 		audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+		mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+		mSensorManager.registerListener(listener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),SensorManager.SENSOR_DELAY_UI);
+		mSensorManager.registerListener(listener, mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT),SensorManager.SENSOR_DELAY_UI);
+		mSensorManager.registerListener(listener, mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY),SensorManager.SENSOR_DELAY_UI);
 		
 		handler = new Handler();
 		handler.removeCallbacks(averageSoundValue);
 		handler.postDelayed(averageSoundValue, 1000);
 		
-		handleInterruption("call", "5554");
+		//handleInterruption("call", "5554");
 		//createNotification("Received SMS", "Testing adaptation activity", 0);
+		Log.d("MainService", "onCreate ended");
 	}
 
 	private void createData() {
 		// TODO Auto-generated method stub
-		// id, weight, cost benefit
+		// id, weight, cost, benefit
+		// situations are defined in res/xml/preferences.xml
 		situations = new ArrayList<Situation>();
-        situations.add(new Situation("At home sleeping", 0, 0, 0));
-        situations.add(new Situation("At home relaxing", 0, 0, 0));
-        situations.add(new Situation("At home working", 1, 1, 2));
-        situations.add(new Situation("At work in meeting", 0, 0, 0));
-        situations.add(new Situation("At work at desk", 0, 0, 0));
-        situations.add(new Situation("On bike", 0, 0, 0));
-        situations.add(new Situation("In car", 0, 0, 0));
-        situations.add(new Situation("In public transport", 0, 0, 0));
+        situations.add(new Situation("1", 0, 0, 0)); // At home sleeping
+        situations.add(new Situation("2", 0, 0, 0)); // At home relaxing
+        situations.add(new Situation("3", 1, 1, 2)); // At home working
+        situations.add(new Situation("4", 0, 0, 0)); // At work in meeting
+        situations.add(new Situation("5", 0, 0, 0)); // At work at desk
+        situations.add(new Situation("6", 0, 0, 0)); // On bike
+        situations.add(new Situation("7", 0, 0, 0)); // In car
+        situations.add(new Situation("8", 0, 0, 0)); // In public transport
         
 		interrupters = new ArrayList<Interrupter>();
-		interrupters.add(new Interrupter("5554", 0, 0, 0));
-		interrupters.add(new Interrupter("5556", 0, 0, 0));
-		interrupters.add(new Interrupter("5558", 0, 0, 0));
-		interrupters.add(new Interrupter("5560", 0, 0, 0));
+		interrupters.add(new Interrupter("15555215554", 0, 0, 0));
+		interrupters.add(new Interrupter("15555215556", 0, 0, 0));
+		interrupters.add(new Interrupter("15555215558", 0, 0, 0));
         
 		notifications = new ArrayList<NotificationType>();
 		notifications.add(new NotificationType("call", 0, 0, 0));
@@ -201,7 +209,11 @@ public class MainService extends Service {
 	@Override
 	public void onDestroy() {
 		handler.removeCallbacks(averageSoundValue);
+		mSensorManager.unregisterListener(listener);
 		averageSoundValue.interrupt();
+		mRecorder.stop();
+		mRecorder.release();
+		
 		Toast.makeText(this, "My Service Stopped", Toast.LENGTH_LONG).show();
 		Log.d("LOG", "onDestroy");
 	}
@@ -214,16 +226,18 @@ public class MainService extends Service {
 	}
 
 	private void handleInterruption(String notificationType, String interrupterID) {
+		Log.d("MainService", "handleInterruption started");
 		int problemState = 0;
 		this.interrupterID = interrupterID;
 		this.notificationType = notificationType;
 		
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		
-		aModel.setSituation(prefs.getString("pref_situation", "At home working"));
+		//Log.d("MainService", prefs.getString("pref_situation", "none"));
+
+		aModel.setSituation(prefs.getString("pref_situation", "0"));
 		aModel.setSettings(audio.getStreamVolume(AudioManager.STREAM_RING), audio.getRingerMode());
 		problemState = aModel.detectProblemState(notificationType, interrupterID);
-		Log.d("LOG", "problemState: " + String.valueOf(problemState));
+		Log.d("MainService", "Problem state: "+String.valueOf(problemState));
 		
 		if (problemState == AnalysisModel.UNWANTED_INTERRUPTION || problemState == AnalysisModel.MISSING_INTERRUPTION) {
 			sModel.setProblemState(problemState);
@@ -231,15 +245,15 @@ public class MainService extends Service {
 			
 			performAction(sModel.getAction());
 		}
+		Log.d("MainService", "handleInterruption ended");
 	}
 
 	private void performAction(ActionObject action) {
+		Log.d("LOG", "Performing action");
 		setSoundSettings(action.getSoundAction());
 		setVibrationSetting(action.getVibrateAction());
 		
-		if (action.getSendSMS() == 1) sendSMS(interrupterID, "Message");		
-		
-		createNotification("Action performed", "Bla", 0);
+		if (action.getSendSMS() == 1) sendSMS(interrupterID, "Message");
 	}
 
 	private void setupCallListener() {
@@ -258,7 +272,6 @@ public class MainService extends Service {
 //		audio.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_LOWER, 0); // volume down
 //		audio.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_RAISE, 0); // volume up
 
-		Log.d("LOG", "sound adaptation: " + String.valueOf(level));
 		// TODO: make mapping from level to actual settings.
 		if (level == 0 && audio.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
 			audio.setRingerMode(AudioManager.RINGER_MODE_SILENT);
@@ -392,7 +405,7 @@ public class MainService extends Service {
 
 	public double getAmplitude() {
 		if (mRecorder != null)
-			return (mRecorder.getMaxAmplitude() / 2700.0);
+			return (mRecorder.getMaxAmplitude() / 2730.0);
 		else
 			return 0;
 	}
