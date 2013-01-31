@@ -62,7 +62,7 @@ public class MainService extends Service {
 	ArrayList<Interrupter> interrupters;
 	ArrayList<NotificationType> notifications;
     
-    private final BroadcastReceiver receiver = new BroadcastReceiver() {
+    private final BroadcastReceiver notificationReceiver = new BroadcastReceiver() {
     	@Override
     	public void onReceive(Context context, Intent intent) {
     		String action = intent.getAction();
@@ -82,6 +82,17 @@ public class MainService extends Service {
 					}
 				}
 			}     
+    	}
+    };
+    
+    private final BroadcastReceiver adaptationReceiver = new BroadcastReceiver() {
+    	@Override
+    	public void onReceive(Context context, Intent intent) {
+    		String action = intent.getAction();
+    		Bundle extras = intent.getExtras();
+    		if(action.equals(AdaptationActivity.INCREASE_SIT)){
+    			Toast.makeText(context, String.valueOf(extras.getInt("value")), Toast.LENGTH_SHORT).show();
+			}   
     	}
     };
     
@@ -161,6 +172,7 @@ public class MainService extends Service {
 		
 		createData();
 		setupCallListener();
+		setupAdaptationListener();
 		setupMic();
 		
 		audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -264,7 +276,13 @@ public class MainService extends Service {
 		filter.addAction("android.intent.action.PHONE_STATE");
 		filter.addAction("android.provider.Telephony.SMS_RECEIVED");
 		
-		registerReceiver(receiver, filter);
+		registerReceiver(notificationReceiver, filter);
+	}
+
+	private void setupAdaptationListener() {
+		IntentFilter filter = new IntentFilter();
+		filter.addAction(AdaptationActivity.INCREASE_SIT);
+		registerReceiver(adaptationReceiver, filter);
 	}
 	
 	private void setSoundSettings(int level) {

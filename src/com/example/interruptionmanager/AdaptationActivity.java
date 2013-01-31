@@ -7,6 +7,7 @@ import com.example.interruptionProperties.NotificationType;
 import com.example.interruptionProperties.Situation;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.view.View;
@@ -16,6 +17,8 @@ import android.widget.RadioGroup;
 import android.widget.Toast;
 
 public class AdaptationActivity extends Activity {
+	
+	static final String INCREASE_SIT = "intent";
 
 	Button btnOk;
 	RadioGroup rdgReasonDeviation;
@@ -55,8 +58,7 @@ public class AdaptationActivity extends Activity {
 		switch (value) {
 		case R.id.rdbSituation:
 			changeSitWeight();
-			Toast.makeText(this, situation, Toast.LENGTH_SHORT).show();
-			//closeActivity();
+			closeActivity();
 			break;
 		case R.id.rdbInterrupter:
 			break;
@@ -76,6 +78,10 @@ public class AdaptationActivity extends Activity {
 		//for (int i = 0; i < situations.size(); i++) {
 			//if (situations.get(i) == )
 		//}
+		// Send broadcast with adaptation information
+		Intent intent = new Intent(AdaptationActivity.INCREASE_SIT)
+		.putExtra("value", 1);
+		sendBroadcast(new Intent(intent));
 	}
 
 	public void setProblemState(int problemState) {
