@@ -3,41 +3,82 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <RadioGroup
-        android:id="@+id/rdgReasonDeviation"
+    <TextView
+        android:id="@+id/txtAdaptationDescription"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="162dp" >
+        android:layout_marginLeft="18dp"
+        android:layout_marginTop="19dp"
+        android:text="-"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
 
-        <RadioButton
-            android:id="@+id/rdbSituation"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Situation" />
+    <CheckBox
+        android:id="@+id/cbxSituationBenefit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/txtAdaptationDescription"
+        android:layout_below="@+id/txtAdaptationDescription"
+        android:text="cbxSituationBenefit" />
 
-        <RadioButton
-            android:id="@+id/rdbInterrupter"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Interrupter" />
+    <CheckBox
+        android:id="@+id/cbxSituationCost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/cbxSituationBenefit"
+        android:layout_below="@+id/cbxSituationBenefit"
+        android:text="cbxSituationCost" />
 
-        <RadioButton
-            android:id="@+id/rdbNotification"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Notification" />
-    </RadioGroup>
+    <CheckBox
+        android:id="@+id/cbxInterrupterBenefit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/cbxSituationCost"
+        android:layout_below="@+id/cbxSituationCost"
+        android:text="cbxInterrupterBenefit" />
+
+    <CheckBox
+        android:id="@+id/cbxInterrupterCost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/cbxInterrupterBenefit"
+        android:layout_below="@+id/cbxInterrupterBenefit"
+        android:text="cbxInterrupterCost" />
+
+    <CheckBox
+        android:id="@+id/cbxNotificationBenefit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/cbxInterrupterCost"
+        android:layout_below="@+id/cbxInterrupterCost"
+        android:text="cbxNotificationBenefit" />
+
+    <CheckBox
+        android:id="@+id/cbxNotificationCost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/cbxNotificationBenefit"
+        android:layout_below="@+id/cbxNotificationBenefit"
+        android:text="cbxNotificationCost" />
 
     <Button
         android:id="@+id/confirm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignTop="@+id/rdgReasonDeviation"
-        android:layout_marginLeft="26dp"
-        android:layout_marginTop="17dp"
-        android:layout_toRightOf="@+id/rdgReasonDeviation"
+        android:layout_alignRight="@+id/cbxSituationCost"
+        android:layout_below="@+id/cbxNotificationCost"
+        android:layout_marginRight="18dp"
+        android:layout_marginTop="29dp"
         android:text="OK" />
+
+    <Button
+        android:id="@+id/cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/confirm"
+        android:layout_alignBottom="@+id/confirm"
+        android:layout_toRightOf="@+id/confirm"
+        android:text="Cancel" />
 
 </RelativeLayout>

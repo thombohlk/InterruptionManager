@@ -11,6 +11,7 @@ public final class R {
     public static final class array {
         public static final int listArray=0x7f050000;
         public static final int listValues=0x7f050001;
+        public static final int situationArray=0x7f050002;
     }
     public static final class attr {
     }
@@ -23,18 +24,22 @@ public final class R {
         public static final int btnOnOff=0x7f090002;
         public static final int btnPreferences=0x7f090000;
         public static final int btnSensors=0x7f090001;
-        public static final int confirm=0x7f090009;
-        public static final int menu_settings=0x7f090010;
-        public static final int prefTimePicker=0x7f09000f;
-        public static final int rdbInterrupter=0x7f090007;
-        public static final int rdbNotification=0x7f090008;
-        public static final int rdbSituation=0x7f090006;
-        public static final int rdgReasonDeviation=0x7f090005;
-        public static final int txtAccelerometerX=0x7f09000c;
-        public static final int txtAccelerometerY=0x7f09000e;
-        public static final int txtAccelerometerZ=0x7f09000d;
-        public static final int txtLight=0x7f09000a;
-        public static final int txtMicrophone=0x7f09000b;
+        public static final int cancel=0x7f09000d;
+        public static final int cbxInterrupterBenefit=0x7f090008;
+        public static final int cbxInterrupterCost=0x7f090009;
+        public static final int cbxNotificationBenefit=0x7f09000a;
+        public static final int cbxNotificationCost=0x7f09000b;
+        public static final int cbxSituationBenefit=0x7f090006;
+        public static final int cbxSituationCost=0x7f090007;
+        public static final int confirm=0x7f09000c;
+        public static final int menu_settings=0x7f090014;
+        public static final int prefTimePicker=0x7f090013;
+        public static final int txtAccelerometerX=0x7f090010;
+        public static final int txtAccelerometerY=0x7f090012;
+        public static final int txtAccelerometerZ=0x7f090011;
+        public static final int txtAdaptationDescription=0x7f090005;
+        public static final int txtLight=0x7f09000e;
+        public static final int txtMicrophone=0x7f09000f;
         public static final int txtStatus=0x7f090003;
     }
     public static final class layout {
@@ -48,9 +53,17 @@ public final class R {
     }
     public static final class string {
         public static final int app_name=0x7f060000;
+        public static final int at_home_relaxing=0x7f06000f;
+        public static final int at_home_sleeping=0x7f06000e;
+        public static final int at_home_working=0x7f060010;
+        public static final int at_work_at_desk=0x7f060012;
+        public static final int at_work_in_meeting=0x7f060011;
         public static final int hello_world=0x7f060001;
+        public static final int in_car=0x7f060014;
+        public static final int in_public_transport=0x7f060015;
         public static final int menu_settings=0x7f060002;
         public static final int notificationTime=0x7f06000c;
+        public static final int on_bike=0x7f060013;
         public static final int pref_ending_work=0x7f06000a;
         public static final int pref_ending_work_summary=0x7f06000b;
         public static final int pref_starting_work=0x7f060008;

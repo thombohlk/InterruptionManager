@@ -22,6 +22,8 @@ public class AnalysisModel {
 	private double lastAveLight = 0;
 	private double piv = 0;
 	private String situation = "0";
+	private String interrupter;
+	private String notification;
 	private int streamVolume = 0;
 	private int ringerMode = 0;
 
@@ -41,7 +43,6 @@ public class AnalysisModel {
 
 	public int detectProblemState(String notification, String interrupter) {
 		boolean detected = userDetectsInput();
-		Log.d("LOG", "Detected: "+String.valueOf(detected));
 		piv = calculatePIV(notification, interrupter);
 
 		Log.d("LOG", "detected = "+ String.valueOf(detected));
@@ -60,10 +61,7 @@ public class AnalysisModel {
 		double result = 0;
 
 		for (int i = 0; i < situations.size(); i++) {
-			if (situations.get(i).id.equals(situation)) {
-				result += (situations.get(i).benefit - situations.get(i).cost) * situations.get(i).weight;
-				Log.d("LOG", "Found situation");
-			}
+			if (situations.get(i).id.equals(situation)) result += (situations.get(i).benefit - situations.get(i).cost) * situations.get(i).weight;
 		}
 		for (int i = 0; i < interrupters.size(); i++) {
 			if (interrupters.get(i).id.equals(interrupter)) result += (interrupters.get(i).benefit - interrupters.get(i).cost) * interrupters.get(i).weight;
@@ -71,18 +69,30 @@ public class AnalysisModel {
 		for (int i = 0; i < notifications.size(); i++) {
 			if (notifications.get(i).id.equals(notification)) result += (notifications.get(i).benefit - notifications.get(i).cost) * notifications.get(i).weight;
 		}
-		Log.d("LOG", "piv = " + String.valueOf(result));
+		Log.d("TRACE", "Calculated Predicted Interruption Value of " + String.valueOf(result));
 		
 		return result;
 	}
 
 	private Boolean userDetectsInput() {
-		// TODO Auto-generated method stub
-		if (ringerMode == AudioManager.RINGER_MODE_VIBRATE && lastAveActivity < 3) {
+		Log.d("TRACE", "Reasoning if user will detect incomming interruption.");
+		if (ringerMode == AudioManager.RINGER_MODE_VIBRATE && lastAveActivity < 5) {
+			Log.d("TRACE", "User will detect incomming interruption.");
 			return true;
-		} else if (ringerMode == AudioManager.RINGER_MODE_NORMAL && streamVolume > lastAveSound) {
+		} else if (ringerMode == AudioManager.RINGER_MODE_NORMAL && (streamVolume == 1 || streamVolume == 2) && lastAveSound < 1) {
+			Log.d("TRACE", "User will detect incomming interruption.");
+			return true;
+		} else if (ringerMode == AudioManager.RINGER_MODE_NORMAL && (streamVolume == 3 || streamVolume == 4) && lastAveSound < 5) {
+			Log.d("TRACE", "User will detect incomming interruption.");
+			return true;
+		} else if (ringerMode == AudioManager.RINGER_MODE_NORMAL && streamVolume >= 5 && lastAveSound < 9) {
+			Log.d("TRACE", "User will detect incomming interruption.");
+			return true;
+		} else if (lastAveLight > 50 && lastAveActivity > 0.02) {
+			Log.d("TRACE", "User will detect incomming interruption.");
 			return true;
 		}
+		Log.d("TRACE", "User will not detect incomming interruption.");
 		return false;
 	}
 
@@ -94,6 +104,14 @@ public class AnalysisModel {
 		this.situation  = s;
 	}
 
+	public void setInterrupter(String i) {
+		this.interrupter  = i;
+	}
+
+	public void setNotification(String n) {
+		this.notification  = n;
+	}
+
 	public void setData(ArrayList<Situation> situations, ArrayList<Interrupter> interrupters, ArrayList<NotificationType> notifications) {
 		this.situations = situations;
 		this.interrupters = interrupters;
@@ -101,7 +119,6 @@ public class AnalysisModel {
 	}
 
 	public void setSettings(int streamVolume, int ringerMode) {
-		// TODO Auto-generated method stub
 		this.streamVolume = streamVolume;
 		this.ringerMode = ringerMode;
 	}

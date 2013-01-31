@@ -1,8 +1,5 @@
 package com.example.interruptionmanager;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
@@ -18,7 +15,6 @@ import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.ToggleButton;
 
 public class MainActivity extends Activity {
@@ -27,7 +23,6 @@ public class MainActivity extends Activity {
 	Button btnSensors;
 	Button btnAdaptation;
 	ToggleButton btnOnOff;
-	TextView txtStatus;
 	
 	MediaRecorder mRecorder;
 	
@@ -44,8 +39,6 @@ public class MainActivity extends Activity {
         btnSensors = (Button)findViewById(R.id.btnSensors);
         btnAdaptation = (Button)findViewById(R.id.btnAdaptation);
         btnOnOff = (ToggleButton)findViewById(R.id.btnOnOff);
-        txtStatus = (TextView)findViewById(R.id.txtStatus);
-
 		
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		Log.d("LOG", prefs.getString("pref_situation", "none"));
@@ -96,7 +89,6 @@ public class MainActivity extends Activity {
     
     @Override
     protected void onResume() {
-    	// TODO Auto-generated method stub
         btnOnOff.setChecked(isMainServiceRunning());
     	super.onResume();
     }

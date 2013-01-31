@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="listArray">
-        <item>At home sleeping</item>
-        <item>At home relaxing</item>
-        <item>At home working</item>
-        <item>At work in meeting</item>
-        <item>At work at desk</item>
-        <item>On bike</item>
-        <item>In car</item>
-        <item>In public transport</item>
+        <item>@string/at_home_sleeping</item>
+        <item>@string/at_home_relaxing</item>
+        <item>@string/at_home_working</item>
+        <item>@string/at_work_in_meeting</item>
+        <item>@string/at_work_at_desk</item>
+        <item>@string/on_bike</item>
+        <item>@string/in_car</item>
+        <item>@string/in_public_transport</item>
     </string-array>
     <string-array name="listValues">
         <item>1</item>
@@ -19,5 +19,10 @@
         <item>6</item>
         <item>7</item>
         <item>8</item>
+    </string-array>
+    <string-array name="situationArray">
+        <item>NO_PROBLEM</item>
+        <item>UNWANTED_INTERRUPTION</item>
+        <item>MISSING_INTERRUPTION</item>
     </string-array>
 </resources>

@@ -18,6 +18,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -37,9 +38,9 @@ import android.widget.Toast;
 
 public class MainService extends Service {
 
-	private static int updateNrOfIterations = 10;
+	private static int updateNrOfIterations = 1;
 	private static double updateIterationDuration = 0.5; // in seconds
-	private static double updateInterval = 180; // in seconds
+	private static double updateInterval = 1; // in seconds
 
 	private MediaRecorder mRecorder;
 	private SensorManager mSensorManager;
@@ -51,6 +52,8 @@ public class MainService extends Service {
 	private SupportModel sModel;
 	private String interrupterID;
 	private String notificationType;
+	private String situation;
+	private int problemState;
 
 	private double lastAveSound = 0;
 	private double lastAveActivity = 0;
@@ -68,22 +71,30 @@ public class MainService extends Service {
     		String action = intent.getAction();
     		if(action.equals("android.provider.Telephony.SMS_RECEIVED")){
 				Bundle extras = intent.getExtras();
-    			//createNotification("Received SMS", "You received an SMS from "+extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER)+". That's all.", 0);
+				Log.d("LOG", "Receiving incomming call with phonenumber: " + String.valueOf(extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER)));
+				handleInterruption("sms", extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER));
 			}
     		if(action.equals("android.intent.action.PHONE_STATE")){
 				Bundle extras = intent.getExtras();
 				if (extras != null) {
 					String state = extras.getString(TelephonyManager.EXTRA_STATE);
-					Log.d("LOG", state);
 					if (state.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
+						Log.d("LOG", "Receiving incomming call with phonenumber: " + String.valueOf(extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER)));
 						handleInterruption("call", extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER));
-						Log.d("LOG", extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER));
 						//sendSMS(extras.getString(TelephonyManager.EXTRA_INCOMING_NUMBER), "Thomas is in a meeting right now. He will call you back today.");
 					}
 				}
 			}     
     	}
     };
+
+	private void setupCallListener() {
+		IntentFilter filter = new IntentFilter();
+		filter.addAction("android.intent.action.PHONE_STATE");
+		filter.addAction("android.provider.Telephony.SMS_RECEIVED");
+		
+		registerReceiver(notificationReceiver, filter);
+	}
     
     private final BroadcastReceiver adaptationReceiver = new BroadcastReceiver() {
     	@Override
@@ -91,10 +102,41 @@ public class MainService extends Service {
     		String action = intent.getAction();
     		Bundle extras = intent.getExtras();
     		if(action.equals(AdaptationActivity.INCREASE_SIT)){
-    			Toast.makeText(context, String.valueOf(extras.getInt("value")), Toast.LENGTH_SHORT).show();
+    			for (int i = 0; i < situations.size(); i++) {
+    				if (situations.get(i).id.equals(extras.getString("situation"))) {
+						Log.d("TRACE", "Situation before: benefit = "+String.valueOf(situations.get(i).benefit)+", cost = "+String.valueOf(situations.get(i).cost));
+    					situations.get(i).benefit = Math.min(10, Math.max(0, situations.get(i).benefit + extras.getInt("situationBenefit")));
+    					situations.get(i).cost = Math.min(10, Math.max(0, situations.get(i).cost + extras.getInt("situationCost")));
+						Log.d("TRACE", "Situation after: benefit = "+String.valueOf(situations.get(i).benefit)+", cost = "+String.valueOf(situations.get(i).cost));
+    				}
+				}
+    			for (int i = 0; i < interrupters.size(); i++) {
+					if (interrupters.get(i).id.equals(extras.getString("interrupter"))) {
+						Log.d("TRACE", "Interrupter before: benefit = "+String.valueOf(interrupters.get(i).benefit)+", cost = "+String.valueOf(interrupters.get(i).cost));
+						interrupters.get(i).benefit = Math.min(10, Math.max(0, interrupters.get(i).benefit + extras.getInt("interrupterBenefit")));
+						interrupters.get(i).cost = Math.min(10, Math.max(0, interrupters.get(i).cost + extras.getInt("interrupterCost")));
+						Log.d("TRACE", "Interrupter after: benefit = "+String.valueOf(interrupters.get(i).benefit)+", cost = "+String.valueOf(interrupters.get(i).cost));
+					}
+				}
+				for (int i = 0; i < notifications.size(); i++) {
+					if (notifications.get(i).id.equals(extras.getString("notification"))) {
+						Log.d("TRACE", "Notification before: benefit = "+String.valueOf(notifications.get(i).benefit)+", cost = "+String.valueOf(notifications.get(i).cost));
+						notifications.get(i).benefit = Math.min(10, Math.max(0, notifications.get(i).benefit + extras.getInt("notificationBenefit")));
+						notifications.get(i).cost = Math.min(10, Math.max(0, notifications.get(i).cost + extras.getInt("notificationCost")));
+						Log.d("TRACE", "Notification after: benefit = "+String.valueOf(notifications.get(i).benefit)+", cost = "+String.valueOf(notifications.get(i).cost));
+					}
+				}
+    					
+    			Toast.makeText(context, String.valueOf(extras.getInt("situationBenefit")), Toast.LENGTH_SHORT).show();
 			}   
     	}
     };
+
+	private void setupAdaptationListener() {
+		IntentFilter filter = new IntentFilter();
+		filter.addAction(AdaptationActivity.INCREASE_SIT);
+		registerReceiver(adaptationReceiver, filter);
+	}
     
     // Sensor listener for accelerometer and light
     private SensorEventListener listener = new SensorEventListener() {
@@ -145,11 +187,12 @@ public class MainService extends Service {
 			lastAveActivity = totalActivityValue / i;
 			lastAveLight = totalLightValue / i;
 
-			Log.d("LOG", "Sound: " + String.valueOf(lastAveSound));
-			Log.d("LOG", "Activity: " + String.valueOf(lastAveActivity));
-			Log.d("LOG", "Light: " + String.valueOf(lastAveLight));		
-			
+			//Log.d("LOG", "Sound: " + String.valueOf(lastAveSound));
+			//Log.d("LOG", "Activity: " + String.valueOf(lastAveActivity));
+			//Log.d("LOG", "Light: " + String.valueOf(lastAveLight));		
+
 			aModel.updateSensorValues(lastAveSound, lastAveActivity, lastAveLight);
+			sModel.updateSensorValues(lastAveSound, lastAveActivity, lastAveLight);
 			
 			// Call itself after updateInterval seconds.
 			handler.removeCallbacks(averageSoundValue);
@@ -185,41 +228,9 @@ public class MainService extends Service {
 		handler.removeCallbacks(averageSoundValue);
 		handler.postDelayed(averageSoundValue, 1000);
 		
-		//handleInterruption("call", "5554");
-		Intent intent = new Intent("com.example.interruptionmanager.ADAPTATIONACTIVITY")
-		.putExtra("situation", "At home working")
-		.putExtra("interrupter", "5554")
-		.putExtra("notification", "call");
-		
-		createNotification("Received SMS", "Testing adaptation activity", 0, intent);
 		Log.d("MainService", "onCreate ended");
-	}
-
-	private void createData() {
-		// TODO Auto-generated method stub
-		// id, weight, cost, benefit
-		// situations are defined in res/xml/preferences.xml
-		situations = new ArrayList<Situation>();
-        situations.add(new Situation("1", 1, 9, 1)); // At home sleeping
-        situations.add(new Situation("2", 1, 2, 5)); // At home relaxing
-        situations.add(new Situation("3", 1, 7, 3)); // At home working
-        situations.add(new Situation("4", 1, 10, 1)); // At work in meeting
-        situations.add(new Situation("5", 1, 8, 0)); // At work at desk
-        situations.add(new Situation("6", 1, 4, 3)); // On bike
-        situations.add(new Situation("7", 1, 8, 2)); // In car
-        situations.add(new Situation("8", 1, 1, 6)); // In public transport
-        
-		interrupters = new ArrayList<Interrupter>();
-		interrupters.add(new Interrupter("+31622725339", 1, 0, 0));
-		interrupters.add(new Interrupter("+31659059324", 1, 0, 0));
-		interrupters.add(new Interrupter("15555215558", 1, 0, 0));
-        
-		notifications = new ArrayList<NotificationType>();
-		notifications.add(new NotificationType("call", 1, 6, 3));
-		notifications.add(new NotificationType("sms", 1, 3, 1));
-
-		aModel.setData(situations, interrupters, notifications);
-		sModel.setData(situations, interrupters, notifications);
+		
+		Toast.makeText(this, "Interruption manager service started", Toast.LENGTH_LONG).show();
 	}
 
 	@Override
@@ -230,7 +241,7 @@ public class MainService extends Service {
 		mRecorder.stop();
 		mRecorder.release();
 		
-		Toast.makeText(this, "My Service Stopped", Toast.LENGTH_LONG).show();
+		Toast.makeText(this, "Interruption manager service stopped", Toast.LENGTH_LONG).show();
 		Log.d("LOG", "onDestroy");
 	}
 	
@@ -242,101 +253,117 @@ public class MainService extends Service {
 	}
 
 	private void handleInterruption(String notificationType, String interrupterID) {
-		Log.d("MainService", "handleInterruption started");
-		int problemState = 0;
+		Log.d("LOG", "handleInterruption started");
 		this.interrupterID = interrupterID;
 		this.notificationType = notificationType;
 		
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		this.situation = prefs.getString("pref_situation", "0");
 
-		aModel.setSituation(prefs.getString("pref_situation", "0"));
+
+		Log.d("TRACE", "Starting analysis.");
+		aModel.setSituation(this.situation);
+		aModel.setInterrupter(this.interrupterID);
+		aModel.setNotification(this.notificationType);
 		aModel.setSettings(audio.getStreamVolume(AudioManager.STREAM_RING), audio.getRingerMode());
-		problemState = aModel.detectProblemState(notificationType, interrupterID);
-		Log.d("MainService", "Problem state: "+String.valueOf(problemState));
+		this.problemState = aModel.detectProblemState(notificationType, interrupterID);
+		Resources res = getResources();
+		String[] sits = res.getStringArray(R.array.situationArray);
+		Log.d("TRACE", "Ended analysis, problem state is: "+sits[Integer.parseInt(this.situation)]);
 		
 		if (problemState == AnalysisModel.UNWANTED_INTERRUPTION || problemState == AnalysisModel.MISSING_INTERRUPTION) {
+			Log.d("TRACE", "Oh noes, a problem!! Starting support.");
 			sModel.setProblemState(problemState);
 			sModel.setPIV(aModel.getPIV());
 			
 			performAction(sModel.getAction());
+		} else {
+			Log.d("TRACE", "No problem state has been detected, just relaxing.");
 		}
-		Log.d("MainService", "handleInterruption ended");
+		Log.d("LOG", "handleInterruption ended");
 	}
 
 	private void performAction(ActionObject action) {
-		Log.d("LOG", "Performing action");
+		Log.d("TRACE", "Performing actions receieved from support model.");
 		setSoundSettings(action.getSoundAction());
 		setVibrationSetting(action.getVibrateAction());
-		
-		if (action.getSendSMS() == 1) sendSMS(interrupterID, "Message");
-	}
+		if (action.getSendSMS() == 1) sendSMS(interrupterID, "User is not availeble right now, he will call you back.");
 
-	private void setupCallListener() {
-		IntentFilter filter = new IntentFilter();
-		filter.addAction("android.intent.action.PHONE_STATE");
-		filter.addAction("android.provider.Telephony.SMS_RECEIVED");
-		
-		registerReceiver(notificationReceiver, filter);
-	}
-
-	private void setupAdaptationListener() {
-		IntentFilter filter = new IntentFilter();
-		filter.addAction(AdaptationActivity.INCREASE_SIT);
-		registerReceiver(adaptationReceiver, filter);
+		Intent intent = new Intent("com.example.interruptionmanager.ADAPTATIONACTIVITY");
+		intent.putExtra("situation", this.situation)
+				.putExtra("interrupter", interrupterID)
+				.putExtra("notification", this.notificationType)
+				.putExtra("problemState", this.problemState);
+		PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+		createNotification("Performed action", "Text", 0, pIntent);
 	}
 	
 	private void setSoundSettings(int level) {
-		// TODO: make mapping from level to actual settings.
 //		int currentVolume = audio.getStreamVolume(AudioManager.STREAM_RING); // current volume
 //		audio.setRingerMode(AudioManager.RINGER_MODE_SILENT); // Silent
 //		audio.setRingerMode(AudioManager.RINGER_MODE_VIBRATE); // Vibrate
-//		audio.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_LOWER, 0); // volume down
-//		audio.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_RAISE, 0); // volume up
+		Log.d("LOG", "Sound adaptation: " + String.valueOf(level));
 
-		// TODO: make mapping from level to actual settings.
 		if (level == 0 && audio.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
 			audio.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+			Log.d("TRACE", "Set ringer mode to silent.");
 		} else {
 			audio.setStreamVolume(AudioManager.STREAM_RING, level, 0);
+			Log.d("TRACE", "Set ringer volume to "+String.valueOf(level));
 		}
 	}
 	
 	private void setVibrationSetting(int level) {
-		// TODO: make mapping from level to actual settings.
-		Log.d("LOG", "vibration adaptation: " + String.valueOf(level));
+		Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+		Log.d("LOG", "Vibration adaptation: " + String.valueOf(level));
 		switch (level) {
 		case 0:
-			if (audio.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE) audio.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+			if (audio.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE) {
+				audio.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+				Log.d("TRACE", "Set ringer mode to silent.");
+			}
 			break;
 		case 1:
-			if (audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT) audio.setRingerMode(AudioManager.RINGER_MODE_VIBRATE); // Vibrate
+			if (audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT) {
+				audio.setRingerMode(AudioManager.RINGER_MODE_VIBRATE); // Vibrate
+				Log.d("TRACE", "Set ringer mode to vibrate.");
+			}
 			break;
 		case 2:
-			audio.setRingerMode(AudioManager.RINGER_MODE_VIBRATE); // Vibrate
-			Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-			long[] pattern = { 500, 500};
-			v.vibrate(pattern, -1);
+			if (audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT) {
+				audio.setRingerMode(AudioManager.RINGER_MODE_VIBRATE); // Vibrate
+				long[] pattern1 = {500, 500};
+				v.vibrate(pattern1, -1);
+				Log.d("TRACE", "Set simple vibration pattern.");
+			}
+		case 3:
+			if (audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT) {
+				audio.setRingerMode(AudioManager.RINGER_MODE_VIBRATE); // Vibrate
+				long[] pattern2 = {3000};
+				v.vibrate(pattern2, -1);
+				Log.d("TRACE", "Set long vibration pattern.");
+			}
 
 		default:
 			break;
 		}
 	}
 
-	private void createNotification(String contentTitle, String contentText, int id, Intent intent) {
+	private void createNotification(String contentTitle, String contentText, int id, PendingIntent pIntent) {
 		// Create notification
 		NotificationCompat.Builder mBuilder =
 		        new NotificationCompat.Builder(this)
 				.setSmallIcon(R.drawable.ic_launcher)
 		        .setContentTitle(contentTitle)
-		        .setContentText(contentText);
+		        .setContentText(contentText)
+		        .setAutoCancel(true);
 		
-		PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, 0);
 		mBuilder.setContentIntent(pIntent);
 		
 		NotificationManager mNotificationManager =
 		    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		// mId allows you to update the notification later on.
 		mNotificationManager.notify(id, mBuilder.build());
+		Log.d("TRACE", "Created notification.");
 	}
 	
     private void sendSMS(String phoneNumber, String message) {        
@@ -398,7 +425,8 @@ public class MainService extends Service {
         }, new IntentFilter(DELIVERED));        
  
         SmsManager sms = SmsManager.getDefault();
-        sms.sendTextMessage(phoneNumber, null, message, sentPI, deliveredPI);        
+        sms.sendTextMessage(phoneNumber, null, message, sentPI, deliveredPI);
+		Log.d("TRACE", "Sent sms to interrupter.");        
     }
     
 
@@ -426,5 +454,30 @@ public class MainService extends Service {
 			return (mRecorder.getMaxAmplitude() / 2730.0);
 		else
 			return 0;
+	}
+
+	private void createData() {
+		// id, weight, cost, benefit
+		// situations are defined in res/xml/preferences.xml
+		situations = new ArrayList<Situation>();
+        situations.add(new Situation("1", 1, 9, 1)); // At home sleeping
+        situations.add(new Situation("2", 1, 2, 5)); // At home relaxing
+        situations.add(new Situation("3", 1, 7, 3)); // At home working
+        situations.add(new Situation("4", 1, 10, 1)); // At work in meeting
+        situations.add(new Situation("5", 1, 8, 0)); // At work at desk
+        situations.add(new Situation("6", 1, 4, 3)); // On bike
+        situations.add(new Situation("7", 1, 8, 2)); // In car
+        situations.add(new Situation("8", 1, 1, 6)); // In public transport
+        
+		interrupters = new ArrayList<Interrupter>();
+		interrupters.add(new Interrupter("+31622725339", 1, 2, 7));
+		interrupters.add(new Interrupter("+31659059324", 1, 0, 0));
+        
+		notifications = new ArrayList<NotificationType>();
+		notifications.add(new NotificationType("call", 1, 6, 8));
+		notifications.add(new NotificationType("sms", 1, 2, 5));
+
+		aModel.setData(situations, interrupters, notifications);
+		sModel.setData(situations, interrupters, notifications);
 	}
 }

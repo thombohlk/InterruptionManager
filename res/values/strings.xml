@@ -13,6 +13,13 @@
     <string name="pref_ending_work">Ending time work</string>
     <string name="pref_ending_work_summary">Set ending time for work.</string>
     <string name="notificationTime">TODO</string>
-    <string name="txtPreferencesButton">Settings</string>
+    <string name="txtPreferencesButton">Settings</string><string name="at_home_sleeping">At home sleeping</string>
+    <string name="at_home_relaxing">At home relaxing</string>
+    <string name="at_home_working">At home working</string>
+    <string name="at_work_in_meeting">At work in meeting</string>
+    <string name="at_work_at_desk">At work at desk</string>
+    <string name="on_bike">On bike</string>
+    <string name="in_car">In car</string>
+    <string name="in_public_transport">In public transport</string>
 
 </resources>
